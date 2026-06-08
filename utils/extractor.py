@@ -55,8 +55,13 @@ def extract_soc2_insights(sanitized_text: str) -> SOC2ReportAnalysis:
 
     # Fix Gap 1: Protect model context boundaries against runaway token inflation (~75K Token Max)
     MAX_CHARS = 300_000  
+    # In app.py, before the extract call:
+    MAX_CHARS = 300_000
     if len(sanitized_text) > MAX_CHARS:
+        st.warning("⚠️ Document exceeds context limits. Analysis covers the first ~75,000 tokens. Later sections (typically CUEC tables) may be incomplete.")
         sanitized_text = sanitized_text[:MAX_CHARS]
+
+analysis_result = extract_soc2_insights(sanitized_text)
 
     extracted_data: SOC2ReportAnalysis = client.chat.completions.create(
         model="gpt-4o-mini",

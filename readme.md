@@ -25,8 +25,8 @@ Unlike standard LLM implementations, this engine enforces strict data-minimizati
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git)
-   cd YOUR_REPO_NAME
+   git clone [https://github.com/GabrielThomasPortfolio/SOC-2-Automation-Engine.git](https://github.com/GabrielThomasPortfolio/SOC-2-Automation-Engine.git)
+   cd SOC-2-Automation-Engine
 Configure your environment variables:
 Create a secure .env file in the root directory:
 
@@ -34,7 +34,7 @@ Code snippet
 OPENAI_API_KEY=sk-proj-your-restricted-key-here
 Install dependencies and launch:
 
-Bash
+
 python -m venv venv
 source venv/bin/activate  # On Windows use: .\venv\Scripts\activate
 pip install -r requirements.txt

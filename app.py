@@ -16,7 +16,7 @@ st.write("Secure, data-masked compliance assessment interface.")
 
 st.markdown("---")
 
-# Fix Gap 3: Initialize session state parameters to protect data metrics from reset cycles
+# Initialize session state parameters to protect data metrics from reset cycles
 if "analysis_result" not in st.session_state:
     st.session_state.analysis_result = None
 if "processing_complete" not in st.session_state:
@@ -31,7 +31,7 @@ with col2:
 uploaded_file = st.file_uploader("Upload Vendor SOC 2 Type II Report (PDF Format)", type=["pdf"])
 
 if st.button("Execute Secure Parse", type="primary"):
-    # Fix Q5: Enforce script halting via st.stop() immediately following input failure events
+    # Enforce script halting via st.stop() immediately following input failure events
     if not vendor_name:
         st.error("❌ Mandatory Field Missing: Please enter a Target Vendor Name.")
         st.stop()
@@ -39,7 +39,7 @@ if st.button("Execute Secure Parse", type="primary"):
         st.error("❌ Missing Asset: Please upload a valid SOC 2 PDF report.")
         st.stop()
 
-    # Fix Bug 2: Operationalize the 10MB file size ceiling check
+    # Operationalize the 10MB file size ceiling check
     if uploaded_file.size > 10 * 1024 * 1024:
         st.error("❌ File Boundary Breach: The uploaded report exceeds the maximum 10MB constraint profile.")
         st.stop()
@@ -54,8 +54,14 @@ if st.button("Execute Secure Parse", type="primary"):
             sanitized_text = sanitize_soc2_pdf(temp_pdf_path, vendor_name, product_name)
             os.unlink(temp_pdf_path)
 
+            # Fix P1: UI-visible truncation gate to guarantee user transparency
+            MAX_CHARS = 300_000
+            if len(sanitized_text) > MAX_CHARS:
+                st.warning("⚠️ Document exceeds context limits. Analysis covers the first ~75,000 tokens. Later sections (typically CUEC tables) may be incomplete.")
+                sanitized_text = sanitized_text[:MAX_CHARS]
+
             with st.spinner("🧠 Analyzing GRC architecture and validating schema compliance..."):
-                # Store the structured object in state so it persists across interactions
+                # Fixed: Called exactly ONCE and mapped directly into persistent state
                 st.session_state.analysis_result = extract_soc2_insights(sanitized_text)
                 st.session_state.processing_complete = True
 

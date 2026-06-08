@@ -28,7 +28,14 @@ def sanitize_soc2_pdf(pdf_path: str, vendor_name: str, product_name: Optional[st
     injection_patterns = [
         r"(?i)ignore (all )?prior instructions",
         r"(?i)system prompt bypass",
-        r"(?i)override original compliance controls"
+        r"(?i)override original compliance controls",
+        r"(?i)disregard (all |any |previous |prior )?instructions",
+        r"(?i)you are now( operating as| a)?",
+        r"(?i)new (system |base |core )?instructions",
+        r"(?i)act as (if you are|an? )",
+        r"(?i)jailbreak",
+        r"(?i)do not follow",
+        r"(?i)forget (all |your |previous )?instructions"
     ]
     
     for pattern in injection_patterns:
