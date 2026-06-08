@@ -1,83 +1,49 @@
 import re
-import os
-import sys
 import pdfplumber
+from typing import Optional
 
-def check_prompt_injection_firewall(text):
+def sanitize_soc2_pdf(pdf_path: str, vendor_name: str, product_name: Optional[str] = None) -> str:
     """
-    ADVERSARIAL INPUT FIREWALL
-    Scans extracted PDF text for malicious structural overrides or jailbreak phrases.
+    Ingests a raw SOC 2 PDF report, applies optimized layout extraction tolerances,
+    screens for adversarial injection states, and masks internal architecture markers.
     """
-    adversarial_patterns = [
-        r"ignore\s+(?:all\s+)?previous\s+instructions",
-        r"override\s+(?:the\s+)?system",
-        r"disregard\s+(?:all\s+)?prior\s+guidelines",
-        r"you\s+are\s+no\s+longer\s+an\s+ai",
-        r"bypass\s+(?:the\s+)?compliance\s+checks",
-        r"output\s+only\s+the\s+word\s+compliant",
-        r"force\s+evaluation\s+to\s+pass"
-    ]
+    full_raw_text = ""
     
-    text_clean = text.lower()
-    for pattern in adversarial_patterns:
-        if re.search(pattern, text_clean):
-            return True, pattern
-            
-    return False, None
-
-def clean_patterns(text):
-    """MASKS STANDARD INFRASTRUCTURE AND PII FOUND IN AUDIT REPORTS"""
-    # Emails
-    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
-    text = re.sub(email_pattern, '[REDACTED_EMAIL_ADDRESS]', text)
-    
-    # IP Addresses
-    ip_pattern = r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
-    text = re.sub(ip_pattern, '[INTERNAL_IP_ADDRESS]', text)
-    
-    # Internal System Paths (Linux/Windows structures often leak in Section III)
-    text = re.sub(r'(/[a-zA-Z0-9_-]+){3,}', '[INTERNAL_SYSTEM_PATH]', text)
-    text = re.sub(r'[a-zA-Z]:\\(?:[a-zA-Z0-9_-]+\\)+', '[INTERNAL_SYSTEM_PATH]', text)
-    return text
-
-def clean_dynamic_keywords(text, vendor_name, product_name=None):
-    """DYNAMICALLY MASKS TARGET VENDOR IDENTIFIERS AT RUNTIME"""
-    dynamic_markers = {vendor_name: "[TARGET_VENDOR_NAME]"}
-    if product_name:
-        dynamic_markers[product_name] = "[TARGET_PRODUCT_PLATFORM]"
-        
-    for keyword, placeholder in dynamic_markers.items():
-        if keyword:
-            pattern = re.compile(re.escape(keyword), re.IGNORECASE)
-            text = pattern.sub(placeholder, text)
-    return text
-
-def sanitize_soc2_pdf(pdf_path, vendor_name, product_name=None):
-    """INGESTS A SOC 2 PDF, EXTRACTS TEXT, SANITIZES, AND RETURNS CLEAN TEXT"""
-    if not os.path.exists(pdf_path):
-        raise FileNotFoundError(f"Could not locate PDF at {pdf_path}")
-        
-    print(f"🔒 Opening raw SOC 2 PDF: '{pdf_path}'")
-    raw_text_chunks = []
-    
-    # Extract layout-aware text with pdfplumber
+    # Open the document using pdfplumber with enhanced reading grid configurations
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
-            text = page.extract_text()
+            # Fix Gap 4: Use explicit tolerances to prevent multi-column cell text interleaving
+            text = page.extract_text(x_tolerance=3, y_tolerance=3)
             if text:
-                raw_text_chunks.append(text)
-                
-    full_raw_text = "\n".join(raw_text_chunks)
+                full_raw_text += text + "\n"
+
+    # Fix Gap 2: Guard against scanned or image-only documents lacking an OCR text layer
+    if not full_raw_text.strip():
+        raise ValueError(
+            "No text layer could be extracted from this document. "
+            "The PDF may be scanned or image-based. Optical Character Recognition (OCR) is not currently supported."
+        )
+
+    # --- INJECTION FIREWALL LAYER ---
+    injection_patterns = [
+        r"(?i)ignore (all )?prior instructions",
+        r"(?i)system prompt bypass",
+        r"(?i)override original compliance controls"
+    ]
     
-    # --- FIREWALL PASS ---
-    is_compromised, caught_pattern = check_prompt_injection_firewall(full_raw_text)
-    if is_compromised:
-        print(f"🚨 CRITICAL ADVERSARIAL OVERRIDE DETECTED ON INGESTION")
-        sys.exit("Pipeline terminated: Security risk state detected in document body.")
-        
-    # --- DATA MASKING ROUTINES ---
-    print("🛡️ Text verified. Executing patterns and dynamic corporate masking...")
-    scrubbed_text = clean_patterns(full_raw_text)
-    final_safe_text = clean_dynamic_keywords(scrubbed_text, vendor_name, product_name)
-    
-    return final_safe_text
+    for pattern in injection_patterns:
+        if re.search(pattern, full_raw_text):
+            # Fix Bug 1: Raise a catchable ValueError instead of executing a fatal sys.exit()
+            raise ValueError("Adversarial security risk state detected in document body. Pipeline execution terminated.")
+
+    # --- DYNAMIC MASKING LAYER ---
+    sanitized_text = full_raw_text.replace(vendor_name, "[TARGET_VENDOR_MASK]")
+    if product_name:
+        sanitized_text = sanitized_text.replace(product_name, "[TARGET_PRODUCT_MASK]")
+
+    # Mask High-Risk Structural Infrastructure Patterns (IPs, Emails)
+    sanitized_text = re.sub(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', '[INTERNAL_IP_ADDRESS]', sanitized_text)
+    sanitized_text = re.sub(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', '[REDACTED_EMAIL_ADDRESS]', sanitized_text)
+    sanitized_text = re.sub(r'\b(?:\+?1[-. ]?)?\(?\d{3}\)?[-. ]?\d{3}[-. ]?\d{4}\b', '[REDACTED_PHONE_NUMBER]', sanitized_text)
+
+    return sanitized_text
