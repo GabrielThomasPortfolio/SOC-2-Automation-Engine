@@ -1,5 +1,7 @@
 # 🛡️ Secure Automated SOC 2 Parsing & TPRM Engine
 
+![CI](https://github.com/GabrielThomasPortfolio/SOC-2-Automation-Engine/actions/workflows/ci.yml/badge.svg)
+
 A production-grade, privacy-first automation tool designed to accelerate Third-Party Risk Management (TPRM) workflows. This engine processes unstructured SOC 2 Type II PDF reports, executes a local "shift-left" data-masking pipeline, extracts structured auditing insights via a validated LLM schema, and programmatically eliminates hallucinations.
 
 ## 🏗️ Architectural Guardrails
