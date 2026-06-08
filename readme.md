@@ -32,7 +32,9 @@ Configure your environment variables:
 Create a secure .env file in the root directory:
 
 Code snippet
+```bash
 OPENAI_API_KEY=sk-proj-your-restricted-key-here
+```
 Install dependencies and launch:
 
 
