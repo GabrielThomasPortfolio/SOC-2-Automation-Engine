@@ -25,8 +25,9 @@ Unlike standard LLM implementations, this engine enforces strict data-minimizati
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/GabrielThomasPortfolio/SOC-2-Automation-Engine.git](https://github.com/GabrielThomasPortfolio/SOC-2-Automation-Engine.git)
+   git clone https://github.com/GabrielThomasPortfolio/SOC-2-Automation-Engine.git
    cd SOC-2-Automation-Engine
+
 Configure your environment variables:
 Create a secure .env file in the root directory:
 
